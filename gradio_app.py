@@ -169,15 +169,12 @@ def draw_box(box, draw, label):
 
         draw.text((box[0], box[1]), label)
 
-
-
 config_file = 'GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py'
 ckpt_repo_id = "ShilongLiu/GroundingDINO"
 ckpt_filenmae = "groundingdino_swint_ogc.pth"
 sam_checkpoint='sam_vit_h_4b8939.pth' 
 output_dir="outputs"
 device="cuda"
-
 
 blip_processor = None
 blip_model = None
@@ -187,8 +184,11 @@ sam_automask_generator = None
 inpaint_pipeline = None
 
 def run_grounded_sam(input_image, text_prompt, task_type, inpaint_prompt, box_threshold, text_threshold, iou_threshold, inpaint_mode, scribble_mode, openai_api_key):
-
+    print("run_grounded_sam function called")
+    
     global blip_processor, blip_model, groundingdino_model, sam_predictor, sam_automask_generator, inpaint_pipeline
+
+    print("Starting Grounded SAM operation...")
 
     # make dir
     os.makedirs(output_dir, exist_ok=True)
@@ -198,15 +198,26 @@ def run_grounded_sam(input_image, text_prompt, task_type, inpaint_prompt, box_th
     size = image.size # w, h
 
     if sam_predictor is None:
-        # initialize SAM
-        assert sam_checkpoint, 'sam_checkpoint is not found!'
-        sam = build_sam(checkpoint=sam_checkpoint)
-        sam.to(device=device)
-        sam_predictor = SamPredictor(sam)
-        sam_automask_generator = SamAutomaticMaskGenerator(sam)
+        try:
+            print("Initializing SAM")
+            assert sam_checkpoint, 'sam_checkpoint is not found!'
+            sam = build_sam(checkpoint=sam_checkpoint)
+            sam.to(device=device)
+            sam_predictor = SamPredictor(sam)
+            sam_automask_generator = SamAutomaticMaskGenerator(sam)
+            print("SAM initialized successfully")
+        except Exception as e:
+            print(f"Error initializing SAM: {e}")
+            return [Image.new('RGB', (100, 100), color='red')]
 
     if groundingdino_model is None:
-        groundingdino_model = load_model(config_file, ckpt_filenmae, device=device)
+        try:
+            print("Initializing GroundingDINO")
+            groundingdino_model = load_model(config_file, ckpt_filenmae, device=device)
+            print("GroundingDINO initialized successfully")
+        except Exception as e:
+            print(f"Error initializing GroundingDINO: {e}")
+            return [Image.new('RGB', (100, 100), color='red')]
 
     image_pil = image.convert("RGB")
     image = np.array(image_pil)
@@ -269,14 +280,13 @@ def run_grounded_sam(input_image, text_prompt, task_type, inpaint_prompt, box_th
 
         boxes_filt = boxes_filt.cpu()
 
-
         if task_type == 'seg' or task_type == 'inpainting' or task_type == 'automatic':
             sam_predictor.set_image(image)
 
             if task_type == 'automatic':
                 # use NMS to handle overlapped boxes
                 print(f"Before NMS: {boxes_filt.shape[0]} boxes")
-                nms_idx = torchvision.ops.nms(boxes_filt, scores, iou_threshold).numpy().tolist()
+                nms_idx = torchvision.ops.nms(boxes_filt, scores, iou_threshold).numpy().tolist
                 boxes_filt = boxes_filt[nms_idx]
                 pred_phrases = [pred_phrases[idx] for idx in nms_idx]
                 print(f"After NMS: {boxes_filt.shape[0]} boxes")
@@ -397,4 +407,4 @@ if __name__ == "__main__":
                         input_image, text_prompt, task_type, inpaint_prompt, box_threshold, text_threshold, iou_threshold, inpaint_mode, scribble_mode, openai_api_key], outputs=gallery)
 
     block.queue(concurrency_count=100)
-    block.launch(server_name='0.0.0.0', server_port=args.port, debug=args.debug, share=args.share)
+    block.launch(server_name="0.0.0.0", server_port=args.port, debug=args.debug, share=args.share)
