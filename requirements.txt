@@ -1,10 +1,15 @@
-addict
+--extra-index-url https://download.pytorch.org/whl/cu121 # CUDA 12.1 (also compatible with CUDA 12.3) - if you have different cuda version, change the version here
+torch
+torchvision
+onnxruntime-gpu
+transformers
 diffusers
-gradio
+
+gradio==3.50.2 # Critical for UI
+addict
 huggingface_hub
 matplotlib
 numpy
-onnxruntime
 opencv_python
 Pillow
 pycocotools
@@ -14,9 +19,6 @@ setuptools
 supervision
 termcolor
 timm
-torch
-torchvision
-transformers
 yapf
 nltk
 fairscale
