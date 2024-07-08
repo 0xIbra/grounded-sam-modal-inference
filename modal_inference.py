@@ -77,11 +77,8 @@ class Model:
     def start_runtime(self):
         print(f"{LOG_DIVIDER}Starting runtime...{LOG_DIVIDER}")
 
-        from gradio_app import (
-            load_model,
-            build_sam,
-            SamPredictor,
-        )
+        from modal_inference_utils import load_model
+        from segment_anything import build_sam, SamPredictor
         import torch
 
         self.device = torch.device("cuda")
@@ -96,11 +93,11 @@ class Model:
 
     @modal.web_endpoint(method="POST", docs=True)
     def predict(self, request: dict):
-        from gradio_app import (
+        from modal_inference_utils import (
             transform_image,
             get_grounding_output,
             draw_box,
-            draw_mask,
+            draw_mask
         )
         from PIL import Image, ImageDraw
         from io import BytesIO
