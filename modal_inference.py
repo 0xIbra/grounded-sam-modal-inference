@@ -24,7 +24,7 @@ def download_model_to_image():
     from huggingface_hub import snapshot_download
     import transformers
 
-    snapshot_download(repo_id=SAM_REPO_ID, filename=SAM_CKPT)
+    snapshot_download(repo_id=SAM_REPO_ID)
 
 
 grounded_sam_image = modal.Image.from_registry(
