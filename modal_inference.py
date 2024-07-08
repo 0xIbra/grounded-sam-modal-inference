@@ -25,6 +25,7 @@ def download_model_to_image():
     import transformers
 
     snapshot_download(repo_id=SAM_REPO_ID)
+    transformers.utils.move_cache()
 
 
 grounded_sam_image = modal.Image.from_registry(
@@ -50,14 +51,15 @@ grounded_sam_image = grounded_sam_image.apt_install(
     extra_index_url="https://download.pytorch.org/whl/cu121",
 )
 
-grounded_sam_image = grounded_sam_image.copy_local_dir(".", ".")
-
-grounded_sam_image = grounded_sam_image.run_commands(
-    "python -m pip install -e segment_anything",
-    "pip install --no-build-isolation -e GroundingDINO",
-)
-
-grounded_sam_image = grounded_sam_image.run_function(download_model_to_image)
+grounded_sam_image = grounded_sam_image \
+    .workdir("/root/") \
+    .copy_local_dir(".", ".") \
+    .run_commands(
+        "ls -l",
+        "python -m pip install -e segment_anything",
+        "pip install --no-build-isolation -e GroundingDINO",
+    ) \
+    .run_function(download_model_to_image)
 
 
 app = modal.App("grounded-sam")
