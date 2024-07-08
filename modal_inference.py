@@ -58,8 +58,7 @@ grounded_sam_image = grounded_sam_image \
         "ls -l",
         "python -m pip install -e segment_anything",
         "pip install --no-build-isolation -e GroundingDINO",
-    ) \
-    .run_function(download_model_to_image)
+    )
 
 
 app = modal.App("grounded-sam")
@@ -163,6 +162,14 @@ class Model:
             multimask_output=False
         )
 
+        # Visualize results
+        result_image = image_pil.copy()
+        draw = ImageDraw.Draw(result_image)
+
+        # Draw boxes and labels
+        for box, label in zip(boxes_filt, pred_phrases):
+            draw_box(box, draw, label)
+
         # Draw masks
         mask_image = Image.new('RGBA', image_pil.size, color=(0, 0, 0, 0))
         mask_draw = ImageDraw.Draw(mask_image)
@@ -179,7 +186,7 @@ class Model:
         img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
         return {
-            "segmented_image": f"data:image/jpeg;{img_str}"
+            "segmented_image": f"data:image/jpeg;base64,{img_str}"
         }
 
     @modal.exit()
@@ -209,8 +216,6 @@ def main(image_url: str = None, prompt: str = None):
     )
 
     data = response.json()
-    print(data)
-
     img_b64 = data["segmented_image"]
     img_b64 = img_b64.split(",")[1]
     img_b64 = base64.b64decode(img_b64)
