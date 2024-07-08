@@ -132,6 +132,7 @@ class Model:
         prompt = request.get("prompt", None)
         box_threshold = request.get("box_threshold", 0.3)
         text_threshold = request.get("text_threshold", 0.25)
+        return_type = request.get("return_type", "base64")
 
         # 1. load image and prepare
         image_pil = get_image_from_request(request)
@@ -185,8 +186,19 @@ class Model:
         result_image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
+
+        b64_masks = []
+        for mask in masks:
+            mask_np = mask[0].cpu().numpy()
+            mask_pil = Image.fromarray((mask_np * 255).astype(np.uint8), mode='L')
+            buffered = BytesIO()
+            mask_pil.save(buffered, format="PNG")
+            b64_mask = base64.b64encode(buffered.getvalue()).decode("utf-8")
+            b64_masks.append(f"data:image/png;base64,{b64_mask}")
+
         return {
-            "segmented_image": f"data:image/jpeg;base64,{img_str}"
+            "segmented_image": f"data:image/jpeg;base64,{img_str}",
+            "masks": b64_masks
         }
 
     @modal.exit()
