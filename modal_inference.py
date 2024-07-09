@@ -33,7 +33,7 @@ grounded_sam_image = modal.Image.from_registry(
 )
 
 grounded_sam_image = grounded_sam_image.apt_install(
-    "openmpi-bin", "libopenmpi-dev", "git", "git-lfs", "wget"
+    "openmpi-bin", "libopenmpi-dev", "git", "git-lfs", "wget", "clang"
 ).pip_install(
     "torch",
     "torchvision",
@@ -57,9 +57,10 @@ grounded_sam_image = grounded_sam_image \
     .workdir("/root/") \
     .copy_local_dir(".", ".") \
     .env({
-        "AM_I_DOCKER": "False",
+        "AM_I_DOCKER": "True",
         "BUILD_WITH_CUDA": "1",
-        "CUDA_HOME": "/usr/local/cuda",
+        "CUDA_HOME": "/usr/local/cuda-12.1",
+        "TORCH_CUDA_ARCH_LIST": "7.5;8.0;8.6+PTX",
     }) \
     .run_commands(
         "ls -l /usr/local/ | grep -i cuda",

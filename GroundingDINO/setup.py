@@ -77,6 +77,13 @@ def get_extensions():
     extra_compile_args = {"cxx": []}
     define_macros = []
 
+    print("\n=========================\n")
+    print("[DEBUG] CUDA_HOME: ", CUDA_HOME)
+    print("[DEBUG] torch.cuda.is_available(): ", torch.cuda.is_available())
+    print("[DEBUG] am_i_docker: ", am_i_docker)
+    print("[DEBUG] use_cuda: ", use_cuda)
+    print("\n=========================\n")
+
     if (torch.cuda.is_available() and CUDA_HOME is not None) or \
             (am_i_docker and use_cuda):
         print("Compiling with CUDA")
