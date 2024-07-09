@@ -47,6 +47,8 @@ grounded_sam_image = grounded_sam_image.apt_install(
     "pyyaml",
     "setuptools",
     "wheel",
+    "ninja",
+    "cython",
     pre=True,
     extra_index_url="https://download.pytorch.org/whl/cu121",
 )
@@ -54,10 +56,18 @@ grounded_sam_image = grounded_sam_image.apt_install(
 grounded_sam_image = grounded_sam_image \
     .workdir("/root/") \
     .copy_local_dir(".", ".") \
+    .env({
+        "AM_I_DOCKER": "False",
+        "BUILD_WITH_CUDA": "1",
+        "CUDA_HOME": "/usr/local/cuda",
+    }) \
     .run_commands(
-        "ls -l",
+        "ls -l /usr/local/ | grep -i cuda",
+        "env | grep -i cuda",
         "python -m pip install -e segment_anything",
-        "pip install --no-build-isolation -e GroundingDINO",
+        "python -m pip install --no-build-isolation -e GroundingDINO",
+        "cd GroundingDINO && python setup.py build_ext --inplace",
+        "ls -l GroundingDINO/groundingdino/"
     )
 
 
