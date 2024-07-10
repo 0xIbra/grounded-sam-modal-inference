@@ -9,6 +9,7 @@ import GroundingDINO.groundingdino.datasets.transforms as T
 import numpy as np
 import random
 import torch
+import time
 
 
 def transform_image(image_pil):
@@ -41,11 +42,14 @@ def get_grounding_output(model, image, caption, box_threshold, text_threshold, w
     if not caption.endswith("."):
         caption = caption + "."
 
+    start = time.time()
     with torch.no_grad():
         outputs = model(image[None], captions=[caption])
     logits = outputs["pred_logits"].cpu().sigmoid()[0]  # (nq, 256)
     boxes = outputs["pred_boxes"].cpu()[0]  # (nq, 4)
     logits.shape[0]
+    end = time.time()
+    print(f"[INFO] Grounding DINO model inference time: {end - start:.2f} seconds")
 
     # filter output
     logits_filt = logits.clone()
@@ -57,10 +61,16 @@ def get_grounding_output(model, image, caption, box_threshold, text_threshold, w
 
     # get phrase
     tokenlizer = model.tokenizer
+
+    start = time.time()
     tokenized = tokenlizer(caption)
+    end = time.time()
+    print(f"[INFO] Tokenization time: {end - start:.2f} seconds")
+
     # build pred
     pred_phrases = []
     scores = []
+    start = time.time()
     for logit, box in zip(logits_filt, boxes_filt):
         pred_phrase = get_phrases_from_posmap(logit > text_threshold, tokenized, tokenlizer)
         if with_logits:
@@ -68,6 +78,9 @@ def get_grounding_output(model, image, caption, box_threshold, text_threshold, w
         else:
             pred_phrases.append(pred_phrase)
         scores.append(logit.max().item())
+
+    end = time.time()
+    print(f"[INFO] Phrase extraction time: {end - start:.2f} seconds")
 
     return boxes_filt, torch.Tensor(scores), pred_phrases
 

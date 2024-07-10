@@ -183,7 +183,7 @@ class Model:
             box_threshold, text_threshold
         )
         end = time.time()
-        print(f"[INFO] Grounding DINO inference time: {end - start:.2f} seconds")
+        print(f"[INFO] get_grounding_output time: {end - start:.2f} seconds")
 
         start = time.time()
         H, W = image_pil.size[1], image_pil.size[0]
