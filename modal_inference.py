@@ -85,17 +85,37 @@ class Model:
     def start_runtime(self):
         print(f"{LOG_DIVIDER}Starting runtime...{LOG_DIVIDER}")
 
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         from modal_inference_utils import load_model
         from segment_anything import build_sam, SamPredictor
         import torch
 
         self.device = torch.device("cuda")
-        self.grounding_model = load_model(
-            CONFIG_FILE, CKPT_FILENAME, device=self.device
-        )
-        self.sam = build_sam(checkpoint=SAM_CKPT)
-        self.sam.to(self.device)
-        self.sam_predictor = SamPredictor(self.sam)
+
+        def load_models_concurrently(load_functions_map: dict) -> dict:
+            model_id_to_model = {}
+            with ThreadPoolExecutor(max_workers=len(load_functions_map)) as executor:
+                future_to_model_id = {
+                    executor.submit(load_fn): model_id for model_id, load_fn in load_functions_map.items()
+                }
+                for future in as_completed(future_to_model_id.keys()):
+                    model_id_to_model[future_to_model_id[future]] = future.result()
+
+            return model_id_to_model
+
+
+        def load_sam(ckpt, device):
+            sam = build_sam(checkpoint=ckpt)
+            sam.to(device)
+            return SamPredictor(sam)
+
+        components = load_models_concurrently({
+            "grounding_model": lambda: load_model(CONFIG_FILE, CKPT_FILENAME, device=self.device),
+            "sam": lambda: load_sam(SAM_CKPT, self.device),
+        })
+
+        self.grounding_model = components["grounding_model"]
+        self.sam_predictor = components["sam"]
 
         print(f"{LOG_DIVIDER}Runtime started{LOG_DIVIDER}")
 
