@@ -112,6 +112,7 @@ class Model:
         import base64
         import numpy as np
         import torch
+        import gc
 
 
         if "prompt" not in request:
@@ -180,6 +181,11 @@ class Model:
             mask_pil.save(buffered, format="PNG")
             b64_mask = base64.b64encode(buffered.getvalue()).decode("utf-8")
             b64_masks.append(f"data:image/png;base64,{b64_mask}")
+
+
+        # clear gpu memory
+        torch.cuda.empty_cache()
+        gc.collect()
 
         return {
             "masks": b64_masks
