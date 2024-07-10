@@ -79,7 +79,7 @@ app = modal.App("grounded-sam")
     gpu=GPU_CONFIG,
     timeout=2 * MINUTES,
     container_idle_timeout=1 * MINUTES,
-    allow_concurrent_inputs=10,
+    allow_concurrent_inputs=20,
     image=grounded_sam_image,
 )
 class Model:
