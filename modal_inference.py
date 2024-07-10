@@ -79,7 +79,7 @@ app = modal.App("grounded-sam")
     gpu=GPU_CONFIG,
     timeout=2 * MINUTES,
     container_idle_timeout=1 * MINUTES,
-    allow_concurrent_inputs=5,
+    allow_concurrent_inputs=10,
     image=grounded_sam_image,
 )
 class Model:
@@ -174,30 +174,6 @@ class Model:
             multimask_output=False
         )
 
-        # Visualize results
-        result_image = image_pil.copy()
-        draw = ImageDraw.Draw(result_image)
-
-        # Draw boxes and labels
-        for box, label in zip(boxes_filt, pred_phrases):
-            draw_box(box, draw, label)
-
-        # Draw masks
-        mask_image = Image.new('RGBA', image_pil.size, color=(0, 0, 0, 0))
-        mask_draw = ImageDraw.Draw(mask_image)
-        for mask in masks:
-            draw_mask(mask[0].cpu().numpy(), mask_draw, random_color=True)
-
-        result_image = result_image.convert('RGBA')
-        result_image.alpha_composite(mask_image)
-
-        result_image = result_image.convert("RGB")
-
-        buffered = BytesIO()
-        result_image.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
-
-
         b64_masks = []
         for mask in masks:
             mask_np = mask[0].cpu().numpy()
@@ -208,7 +184,6 @@ class Model:
             b64_masks.append(f"data:image/png;base64,{b64_mask}")
 
         return {
-            "segmented_image": f"data:image/jpeg;base64,{img_str}",
             "masks": b64_masks
         }
 
