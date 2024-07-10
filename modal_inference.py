@@ -4,6 +4,12 @@ import requests
 import os
 
 
+REQUIRED_MODEL_FILES = ["groundingdino_swint_ogc.pth", "sam_vit_h_4b8939.pth"]
+if not all(os.path.exists(file) for file in REQUIRED_MODEL_FILES):
+    text = f"[ERROR] Required model files not found: {', '.join(REQUIRED_MODEL_FILES)}"
+    raise ValueError(text)
+
+
 GPU_TYPE = os.getenv("GPU_TYPE", "t4")
 GPU_COUNT = int(os.getenv("GPU_COUNT", "1"))
 GPU_CONFIG = f"{GPU_TYPE}:{GPU_COUNT}"
