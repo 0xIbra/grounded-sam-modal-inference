@@ -20,14 +20,6 @@ MINUTES = 60
 LOG_DIVIDER = "\n==========================\n"
 
 
-def download_model_to_image():
-    from huggingface_hub import snapshot_download
-    import transformers
-
-    snapshot_download(repo_id=SAM_REPO_ID)
-    transformers.utils.move_cache()
-
-
 grounded_sam_image = modal.Image.from_registry(
     "nvidia/cuda:12.1.1-devel-ubuntu22.04", add_python="3.10"
 )
@@ -79,7 +71,7 @@ app = modal.App("grounded-sam")
     gpu=GPU_CONFIG,
     timeout=2 * MINUTES,
     container_idle_timeout=1 * MINUTES,
-    allow_concurrent_inputs=20,
+    allow_concurrent_inputs=7,
     image=grounded_sam_image,
 )
 class Model:
