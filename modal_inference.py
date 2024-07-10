@@ -89,6 +89,7 @@ class Model:
         from modal_inference_utils import load_model
         from segment_anything import build_sam, SamPredictor
         import torch
+        import time
 
         self.device = torch.device("cuda")
 
@@ -109,6 +110,8 @@ class Model:
             sam.to(device)
             return SamPredictor(sam)
 
+        start = time.time()
+
         components = load_models_concurrently({
             "grounding_model": lambda: load_model(CONFIG_FILE, CKPT_FILENAME, device=self.device),
             "sam": lambda: load_sam(SAM_CKPT, self.device),
@@ -116,6 +119,9 @@ class Model:
 
         self.grounding_model = components["grounding_model"]
         self.sam_predictor = components["sam"]
+
+        end = time.time()
+        print(f"[INFO] Loaded models in {end - start:.2f} seconds")
 
         print(f"{LOG_DIVIDER}Runtime started{LOG_DIVIDER}")
 
@@ -132,6 +138,7 @@ class Model:
         import base64
         import numpy as np
         import torch
+        import time
         import gc
 
 
@@ -170,11 +177,15 @@ class Model:
         transformed_image = transform_image(image_pil)
 
         # 2. run groudning dino
+        start = time.time()
         boxes_filt, scores, pred_phrases = get_grounding_output(
             self.grounding_model, transformed_image, prompt,
             box_threshold, text_threshold
         )
+        end = time.time()
+        print(f"[INFO] Grounding DINO inference time: {end - start:.2f} seconds")
 
+        start = time.time()
         H, W = image_pil.size[1], image_pil.size[0]
         for i in range(boxes_filt.size(0)):
             boxes_filt[i] = boxes_filt[i] * torch.Tensor([W, H, W, H])
@@ -192,7 +203,10 @@ class Model:
             boxes=transformed_boxes,
             multimask_output=False
         )
+        end = time.time()
+        print(f"[INFO] SAM inference time: {end - start:.2f} seconds")
 
+        start = time.time()
         b64_masks = []
         for mask in masks:
             mask_np = mask[0].cpu().numpy()
@@ -201,11 +215,16 @@ class Model:
             mask_pil.save(buffered, format="PNG")
             b64_mask = base64.b64encode(buffered.getvalue()).decode("utf-8")
             b64_masks.append(f"data:image/png;base64,{b64_mask}")
+        end = time.time()
+        print(f"[INFO] Mask encoding time: {end - start:.2f} seconds")
 
 
+        start = time.time()
         # clear gpu memory
         torch.cuda.empty_cache()
         gc.collect()
+        end = time.time()
+        print(f"[INFO] GPU memory cleared in {end - start:.2f} seconds")
 
         return {
             "masks": b64_masks
