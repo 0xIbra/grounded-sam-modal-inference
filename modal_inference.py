@@ -1,5 +1,6 @@
 import modal
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Request, status, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import requests
 import os
 
@@ -72,6 +73,25 @@ grounded_sam_image = grounded_sam_image \
 
 app = modal.App("grounded-sam")
 
+auth_scheme = HTTPBearer()
+
+
+@app.function(secrets=[modal.Secret.from_name("web-auth")])
+@modal.web_endpoint()
+async def f(request: Request, token: HTTPAuthorizationCredentials = Depends(auth_scheme)):
+    import os
+
+    print(os.environ["AUTH_TOKEN"])
+
+    if token.credentials != os.environ["AUTH_TOKEN"]:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect bearer token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Function body
+    return "success!"
 
 @app.cls(
     gpu=GPU_CONFIG,
@@ -130,10 +150,8 @@ class Model:
         from modal_inference_utils import (
             transform_image,
             get_grounding_output,
-            draw_box,
-            draw_mask
         )
-        from PIL import Image, ImageDraw
+        from PIL import Image
         from io import BytesIO
         import base64
         import numpy as np
