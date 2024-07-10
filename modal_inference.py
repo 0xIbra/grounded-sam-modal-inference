@@ -1,6 +1,5 @@
 import modal
-from fastapi import HTTPException, Request, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import HTTPException, status
 import requests
 import os
 
