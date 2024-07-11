@@ -1,0 +1,16 @@
+--extra-index-url https://download.pytorch.org/whl/cu121
+--pre
+torch
+torchvision
+onnxruntime-gpu
+transformers
+diffusers
+numpy
+opencv-python
+pillow
+huggingface_hub
+pyyaml
+setuptools
+wheel
+ninja
+cython
