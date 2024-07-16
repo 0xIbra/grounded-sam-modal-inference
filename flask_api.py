@@ -6,13 +6,17 @@ import requests
 import torch
 import numpy as np
 import gc
-from modal_inference_utils import transform_image, get_grounding_output
-from modal_inference import Model
+from modal_inference_utils import transform_image, get_grounding_output, load_model
+from segment_anything import build_sam, SamPredictor
 
 app = Flask(__name__)
 
-model = Model()
-model.start_runtime()
+# Load models
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+grounding_model = load_model("GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py", "groundingdino_swint_ogc.pth", device)
+sam = build_sam(checkpoint="sam_vit_h_4b8939.pth")
+sam.to(device)
+sam_predictor = SamPredictor(sam)
 
 def get_image_from_request(request):
     if "image_url" in request:
@@ -47,7 +51,7 @@ def predict():
 
     # 2. run grounding dino
     boxes_filt, scores, pred_phrases = get_grounding_output(
-        model.grounding_model, transformed_image, prompt,
+        grounding_model, transformed_image, prompt,
         box_threshold, text_threshold
     )
 
@@ -60,9 +64,9 @@ def predict():
     boxes_filt = boxes_filt.cpu()
 
     # Run SAM
-    model.sam_predictor.set_image(image)
-    transformed_boxes = model.sam_predictor.transform.apply_boxes_torch(boxes_filt, image.shape[:2]).to(model.device)
-    masks, _, _ = model.sam_predictor.predict_torch(
+    sam_predictor.set_image(image)
+    transformed_boxes = sam_predictor.transform.apply_boxes_torch(boxes_filt, image.shape[:2]).to(device)
+    masks, _, _ = sam_predictor.predict_torch(
         point_coords=None,
         point_labels=None,
         boxes=transformed_boxes,
